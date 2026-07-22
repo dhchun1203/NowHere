@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
-import { Pressable, SafeAreaView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { CategoryGrid } from "../components/CategoryGrid";
 import { useTheme } from "../constants/theme";
 import { useLocation } from "../hooks/useLocation";
