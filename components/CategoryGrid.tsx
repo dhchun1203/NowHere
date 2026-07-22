@@ -12,7 +12,7 @@ export function CategoryGrid({ onSelect }: Props) {
   const { spacing, radius, typography } = useTheme();
 
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.lg, justifyContent: "space-between" }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
       {CATEGORIES.map((c) => {
         const tone = categoryColors[c.key];
         return (
@@ -20,18 +20,19 @@ export function CategoryGrid({ onSelect }: Props) {
             key={c.key}
             onPress={() => onSelect(c.key)}
             style={{
-              width: "47%",
-              aspectRatio: 1.1,
+              flexBasis: "48%",
+              flexGrow: 1,
+              aspectRatio: 1.5,
               backgroundColor: tone.tint,
               borderColor: "transparent",
               borderRadius: radius.xl,
               alignItems: "center",
               justifyContent: "center",
-              gap: spacing.sm,
+              gap: spacing.xs,
             }}
           >
-            <Text style={{ fontSize: 40 }}>{c.emoji}</Text>
-            <Text style={[typography.title, { color: tone.accent }]}>{c.label}</Text>
+            <Text style={{ fontSize: 32 }}>{c.emoji}</Text>
+            <Text style={[typography.bodyMedium, { color: tone.accent }]}>{c.label}</Text>
           </Card>
         );
       })}
