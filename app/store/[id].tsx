@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import type { ReactNode } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CATEGORIES } from "../../constants/categories";
 import { useStoreDetail } from "../../hooks/useNearbyStores";
 import type { BusinessHours } from "../../services/types";
@@ -44,9 +44,20 @@ export default function StoreDetailScreen() {
         <Text style={styles.heroEmoji}>{categoryInfo?.emoji ?? "📍"}</Text>
       </View>
       <Text style={styles.name}>{store.name}</Text>
-      <Text style={styles.rating}>
-        ⭐ {store.avgRating.toFixed(1)} · 리뷰 {store.reviewCount}개
-      </Text>
+      {store.reviewCount > 0 && (
+        <Text style={styles.rating}>
+          ⭐ {store.avgRating.toFixed(1)} · 리뷰 {store.reviewCount}개
+        </Text>
+      )}
+
+      {store.kakaoPlaceUrl && (
+        <Pressable
+          style={styles.kakaoButton}
+          onPress={() => Linking.openURL(store.kakaoPlaceUrl!)}
+        >
+          <Text style={styles.kakaoButtonText}>카카오맵에서 평점·리뷰 보기 →</Text>
+        </Pressable>
+      )}
 
       <View style={styles.tags}>
         {store.tags.map((tag) => (
@@ -119,6 +130,20 @@ const styles = StyleSheet.create({
     color: "#777",
     marginTop: 6,
     marginHorizontal: 20,
+  },
+  kakaoButton: {
+    backgroundColor: "#FFF4E5",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginTop: 12,
+    marginHorizontal: 20,
+    alignSelf: "flex-start",
+  },
+  kakaoButtonText: {
+    color: "#ff6b35",
+    fontSize: 13,
+    fontWeight: "700",
   },
   tags: {
     flexDirection: "row",

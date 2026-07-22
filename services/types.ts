@@ -25,6 +25,7 @@ export type Store = {
   reviewCount: number;
   tags: string[];
   updatedAt: string;
+  kakaoPlaceUrl: string | null;
 };
 
 export type Sentiment = "positive" | "negative" | "neutral";

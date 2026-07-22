@@ -27,8 +27,17 @@ create table if not exists stores (
   avg_rating numeric not null default 0,
   review_count integer not null default 0,
   tags text[] not null default '{}',
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  kakao_place_url text
 );
+
+-- 이미 stores 테이블이 있는 기존 프로젝트에도 컬럼을 소급 적용.
+alter table stores add column if not exists kakao_place_url text;
+
+-- 카카오 로컬 API로 시드할 때 같은 가게를 중복으로 넣지 않도록 유니크 제약(NULL은 여러 개 허용됨).
+do $$ begin
+  alter table stores add constraint stores_kakao_place_url_key unique (kakao_place_url);
+exception when duplicate_object then null; end $$;
 
 create table if not exists review_summaries (
   id uuid primary key default gen_random_uuid(),

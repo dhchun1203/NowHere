@@ -39,6 +39,7 @@ type StoreRow = {
   review_count: number;
   tags: string[];
   updated_at: string;
+  kakao_place_url: string | null;
 };
 
 function rowToStore(row: StoreRow): Store {
@@ -55,6 +56,7 @@ function rowToStore(row: StoreRow): Store {
     reviewCount: row.review_count,
     tags: row.tags ?? [],
     updatedAt: row.updated_at,
+    kakaoPlaceUrl: row.kakao_place_url ?? null,
   };
 }
 

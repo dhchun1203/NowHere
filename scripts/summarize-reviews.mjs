@@ -65,7 +65,7 @@ const SYSTEM_PROMPT = `너는 한국 맛집/가게 리뷰 요약 시스템이다
 - sentiment는 positive, negative, neutral 중 하나다.
 - samplePhrase는 20자 내외의 자연스러운 한국어 문장으로, 절대 원문 그대로 베끼지 않는다.
 
-반드시 JSON 배열만 응답한다. 다른 설명 텍스트를 붙이지 않는다. 형식:
+반드시 JSON 배열만 응답한다. 마크다운 코드블록(\`\`\`)으로 감싸지 말고, 다른 설명 텍스트도 붙이지 않는다. 형식:
 [{"attribute": "...", "mentionRatio": 0.4, "sentiment": "positive", "samplePhrase": "..."}]`;
 
 async function summarizeWithClaude(storeName, snippets) {
@@ -86,11 +86,13 @@ async function summarizeWithClaude(storeName, snippets) {
   });
 
   const text = message.content.map((block) => (block.type === "text" ? block.text : "")).join("");
+  // 가끔 마크다운 코드블록으로 감싸서 응답하는 경우가 있어 방어적으로 벗겨낸다.
+  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   try {
-    const parsed = JSON.parse(text.trim());
+    const parsed = JSON.parse(cleaned);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
-    console.warn(`  Claude 응답 파싱 실패: ${text.slice(0, 200)}`);
+    console.warn(`  Claude 응답 파싱 실패: ${text.slice(0, 300)}`);
     return [];
   }
 }

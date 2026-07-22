@@ -19,7 +19,8 @@ export function StoreListItem({ store, isRecommended, onPress }: Props) {
         )}
       </View>
       <Text style={styles.meta}>
-        ⭐ {store.avgRating.toFixed(1)} ({store.reviewCount}) · {(store.distanceMeters / 1000).toFixed(1)}km
+        {store.reviewCount > 0 ? `⭐ ${store.avgRating.toFixed(1)} (${store.reviewCount}) · ` : ""}
+        {(store.distanceMeters / 1000).toFixed(1)}km
       </Text>
       <View style={styles.tags}>
         {store.tags.map((tag) => (
