@@ -31,37 +31,66 @@
       border: 2px solid #ffffff;
       box-shadow: 0 0 0 2px #3478F6;
     }
+    #status {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 999;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      font: 12px/1.4 -apple-system, sans-serif;
+      padding: 6px 10px;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
+  <div id="status">로딩 시작...</div>
   <div id="map"></div>
   <script>
     function post(payload) {
       var msg = JSON.stringify(payload);
       if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
     }
-    window.onerror = function (message) { post({ mapError: String(message) }); };
+    function setStatus(text) {
+      var el = document.getElementById('status');
+      if (el) el.textContent = text;
+      post({ status: text });
+    }
+    window.onerror = function (message) {
+      setStatus('JS 에러: ' + message);
+      post({ mapError: String(message) });
+    };
+    setStatus('SDK 스크립트 로딩 중... location=' + window.location.href);
   </script>
   <script
     src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=5ffdaff75515163aa48ee83020d8dd6a&autoload=false"
-    onerror="post({ mapError: '카카오맵 SDK 스크립트 로드 실패 (네트워크 또는 도메인 오류)' })"
+    onerror="setStatus('SDK 스크립트 로드 실패'); post({ mapError: '카카오맵 SDK 스크립트 로드 실패 (네트워크 또는 도메인 오류)' })"
+    onload="setStatus('SDK 스크립트 로드됨, kakao.maps.load 호출 중...')"
   ></script>
   <script>
     var map = null;
     var overlays = [];
+    var GANGNAM = { latitude: 37.4979, longitude: 127.0276 };
 
     function clearOverlays() {
       overlays.forEach(function (o) { o.setMap(null); });
       overlays = [];
     }
 
-    function render(data) {
-      var center = new kakao.maps.LatLng(data.userLocation.latitude, data.userLocation.longitude);
+    function ensureMap(centerCoords) {
+      var center = new kakao.maps.LatLng(centerCoords.latitude, centerCoords.longitude);
       if (!map) {
         map = new kakao.maps.Map(document.getElementById('map'), { center: center, level: 4 });
       } else {
         map.setCenter(center);
       }
+      return center;
+    }
+
+    function render(data) {
+      var center = ensureMap(data.userLocation);
       clearOverlays();
 
       var userEl = document.createElement('div');
@@ -85,6 +114,7 @@
         overlay.setMap(map);
         overlays.push(overlay);
       });
+      setStatus('지도 갱신됨 (가게 ' + (data.stores || []).length + '개)');
     }
 
     function handleMessage(event) {
@@ -92,6 +122,7 @@
         var data = JSON.parse(event.data);
         if (data.type === 'update') render(data);
       } catch (e) {
+        setStatus('메시지 파싱 에러: ' + (e && e.message ? e.message : e));
         post({ mapError: 'message parse error: ' + (e && e.message ? e.message : e) });
       }
     }
@@ -101,15 +132,22 @@
 
     setTimeout(function () {
       if (typeof kakao === 'undefined' || !kakao.maps) {
+        setStatus('5초 타임아웃: kakao 전역 객체 없음 (도메인 미등록 가능성)');
         post({ mapError: '카카오맵 SDK가 5초 내에 초기화되지 않음 (도메인 미등록 가능성)' });
       }
     }, 5000);
 
     try {
+      setStatus('kakao.maps.load 호출...');
       kakao.maps.load(function () {
+        // RN으로부터 postMessage가 안 와도 기본 좌표(강남역)로 지도가 뜨는지 확인 가능하도록
+        // 우선 기본 지도를 그린다. 이후 실제 데이터가 오면 render()가 덮어쓴다.
+        ensureMap(GANGNAM);
+        setStatus('지도 초기화 완료 (기본: 강남역). RN 데이터 대기 중...');
         post({ pageReady: true });
       });
     } catch (e) {
+      setStatus('kakao.maps.load 호출 실패: ' + (e && e.message ? e.message : e));
       post({ mapError: 'kakao.maps.load 호출 실패: ' + (e && e.message ? e.message : e) });
     }
   </script>
