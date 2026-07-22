@@ -21,8 +21,8 @@ export default function CategoryScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: colors.background,
-        paddingHorizontal: spacing.xxl,
+        backgroundColor: colors.surface,
+        paddingHorizontal: spacing.xxxl,
         paddingTop: spacing.lg,
         paddingBottom: spacing.xxl,
       }}
