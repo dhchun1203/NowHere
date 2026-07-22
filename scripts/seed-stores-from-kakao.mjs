@@ -35,7 +35,7 @@ const AREAS = [
 ];
 
 const RADIUS_METERS = 3000;
-const PER_AREA_LIMIT = 5;
+const PER_AREA_LIMIT = 15;
 
 async function kakaoCategorySearch(categoryCode, area) {
   const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${categoryCode}&x=${area.longitude}&y=${area.latitude}&radius=${RADIUS_METERS}&sort=accuracy&size=15`;

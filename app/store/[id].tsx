@@ -6,17 +6,6 @@ import { categoryColors, useTheme } from "../../constants/theme";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { useStoreDetail, useStoreReviewSummaries } from "../../hooks/useNearbyStores";
-import type { BusinessHours } from "../../services/types";
-
-const DAY_LABELS: { key: keyof BusinessHours; label: string }[] = [
-  { key: "mon", label: "월" },
-  { key: "tue", label: "화" },
-  { key: "wed", label: "수" },
-  { key: "thu", label: "목" },
-  { key: "fri", label: "금" },
-  { key: "sat", label: "토" },
-  { key: "sun", label: "일" },
-];
 
 export default function StoreDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -103,20 +92,6 @@ export default function StoreDetailScreen() {
           </View>
         </Section>
       )}
-
-      <Section title="영업시간" spacing={spacing}>
-        {DAY_LABELS.map(({ key, label }) => {
-          const hours = store.businessHours[key];
-          return (
-            <View key={key} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 }}>
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>{label}</Text>
-              <Text style={[typography.caption, { color: colors.textPrimary }]}>
-                {hours ? `${hours.open} - ${hours.close}` : "정보 없음"}
-              </Text>
-            </View>
-          );
-        })}
-      </Section>
 
       <Section title="주소" spacing={spacing}>
         <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 20 }]}>{store.address}</Text>
