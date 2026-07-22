@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchNearbyStores, fetchRecommendation, fetchStoreDetail } from "../services/api";
+import { fetchNearbyStores, fetchRecommendation, fetchStoreDetail, fetchStoreReviewSummaries } from "../services/api";
 import type { Category, Coordinates } from "../services/types";
 
 export function useNearbyStores(category: Category | undefined, location: Coordinates | null) {
@@ -22,6 +22,14 @@ export function useStoreDetail(id: string | undefined) {
   return useQuery({
     queryKey: ["store-detail", id],
     queryFn: () => fetchStoreDetail(id as string),
+    enabled: !!id,
+  });
+}
+
+export function useStoreReviewSummaries(id: string | undefined) {
+  return useQuery({
+    queryKey: ["store-review-summaries", id],
+    queryFn: () => fetchStoreReviewSummaries(id as string),
     enabled: !!id,
   });
 }

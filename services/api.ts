@@ -127,6 +127,17 @@ export async function fetchStoreDetail(id: string): Promise<Store | null> {
   return rowToStore(data as StoreRow);
 }
 
+export async function fetchStoreReviewSummaries(storeId: string): Promise<ReviewSummary[]> {
+  const { data, error } = await supabase
+    .from("review_summaries")
+    .select("*")
+    .eq("store_id", storeId)
+    .gte("mention_ratio", MENTION_RATIO_THRESHOLD)
+    .order("mention_ratio", { ascending: false });
+  if (error) throw error;
+  return (data as ReviewSummaryRow[]).map(rowToReviewSummary);
+}
+
 const KAKAO_REST_API_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY;
 
 // 카카오 로컬 API(키워드 검색)로 지역/장소명을 좌표로 변환한다.

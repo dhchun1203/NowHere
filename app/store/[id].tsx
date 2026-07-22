@@ -1,8 +1,11 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, ScrollView, Text, View } from "react-native";
 import { CATEGORIES } from "../../constants/categories";
-import { useStoreDetail } from "../../hooks/useNearbyStores";
+import { categoryColors, useTheme } from "../../constants/theme";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { useStoreDetail, useStoreReviewSummaries } from "../../hooks/useNearbyStores";
 import type { BusinessHours } from "../../services/types";
 
 const DAY_LABELS: { key: keyof BusinessHours; label: string }[] = [
@@ -18,10 +21,12 @@ const DAY_LABELS: { key: keyof BusinessHours; label: string }[] = [
 export default function StoreDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: store, isLoading } = useStoreDetail(id);
+  const { data: reviewSummaries } = useStoreReviewSummaries(id);
+  const { colors, typography, spacing, radius } = useTheme();
 
   if (isLoading) {
     return (
-      <View style={styles.centerScreen}>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator />
       </View>
     );
@@ -29,51 +34,83 @@ export default function StoreDetailScreen() {
 
   if (!store) {
     return (
-      <View style={styles.centerScreen}>
-        <Text style={styles.emptyText}>가게 정보를 찾을 수 없어요.</Text>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ fontSize: 15, color: colors.textSecondary }}>가게 정보를 찾을 수 없어요.</Text>
       </View>
     );
   }
 
   const categoryInfo = CATEGORIES.find((c) => c.key === store.category);
+  const tone = categoryColors[store.category];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 40 }}>
       <Stack.Screen options={{ title: store.name }} />
-      <View style={styles.hero}>
-        <Text style={styles.heroEmoji}>{categoryInfo?.emoji ?? "📍"}</Text>
+
+      <View style={{ height: 160, backgroundColor: tone.tint, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ fontSize: 56 }}>{categoryInfo?.emoji ?? "📍"}</Text>
       </View>
-      <Text style={styles.name}>{store.name}</Text>
-      {store.reviewCount > 0 && (
-        <Text style={styles.rating}>
-          ⭐ {store.avgRating.toFixed(1)} · 리뷰 {store.reviewCount}개
-        </Text>
-      )}
 
-      {store.kakaoPlaceUrl && (
-        <Pressable
-          style={styles.kakaoButton}
-          onPress={() => Linking.openURL(store.kakaoPlaceUrl!)}
-        >
-          <Text style={styles.kakaoButtonText}>카카오맵에서 평점·리뷰 보기 →</Text>
-        </Pressable>
-      )}
+      <View style={{ marginTop: spacing.lg, marginHorizontal: spacing.xl }}>
+        <Text style={[typography.headline, { color: colors.textPrimary }]}>{store.name}</Text>
+        {store.reviewCount > 0 && (
+          <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 6 }]}>
+            ⭐ {store.avgRating.toFixed(1)} · 리뷰 {store.reviewCount}개
+          </Text>
+        )}
 
-      <View style={styles.tags}>
-        {store.tags.map((tag) => (
-          <View key={tag} style={styles.tag}>
-            <Text style={styles.tagText}>{tag}</Text>
+        {store.kakaoPlaceUrl && (
+          <View style={{ marginTop: spacing.md, alignSelf: "flex-start" }}>
+            <Button label="카카오맵에서 평점·리뷰 보기 →" variant="secondary" onPress={() => Linking.openURL(store.kakaoPlaceUrl!)} />
           </View>
-        ))}
+        )}
+
+        {store.tags.length > 0 && (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginTop: spacing.md }}>
+            {store.tags.map((tag) => (
+              <Badge key={tag} label={tag} />
+            ))}
+          </View>
+        )}
       </View>
 
-      <Section title="영업시간">
+      {reviewSummaries && reviewSummaries.length > 0 && (
+        <Section title="리뷰 요약" spacing={spacing}>
+          <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.md }]}>
+            블로그 리뷰 {reviewSummaries.length}개 특징을 요약했어요 (원문 그대로가 아닌 AI 요약)
+          </Text>
+          <View style={{ gap: spacing.sm }}>
+            {reviewSummaries.map((r) => (
+              <View
+                key={r.id}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderLeftWidth: 3,
+                  borderLeftColor: tone.accent,
+                  borderRadius: radius.sm,
+                  padding: spacing.md,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Badge label={r.attribute} color={tone.accent} tint={tone.tint} tone="primary" />
+                  <Text style={[typography.micro, { color: colors.textTertiary }]}>
+                    언급 {Math.round(r.mentionRatio * 100)}%
+                  </Text>
+                </View>
+                <Text style={[typography.body, { color: colors.textSecondary }]}>“{r.samplePhrase}”</Text>
+              </View>
+            ))}
+          </View>
+        </Section>
+      )}
+
+      <Section title="영업시간" spacing={spacing}>
         {DAY_LABELS.map(({ key, label }) => {
           const hours = store.businessHours[key];
           return (
-            <View key={key} style={styles.hoursRow}>
-              <Text style={styles.hoursDay}>{label}</Text>
-              <Text style={styles.hoursValue}>
+            <View key={key} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 }}>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>{label}</Text>
+              <Text style={[typography.caption, { color: colors.textPrimary }]}>
                 {hours ? `${hours.open} - ${hours.close}` : "정보 없음"}
               </Text>
             </View>
@@ -81,122 +118,31 @@ export default function StoreDetailScreen() {
         })}
       </Section>
 
-      <Section title="주소">
-        <Text style={styles.plainText}>{store.address}</Text>
+      <Section title="주소" spacing={spacing}>
+        <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 20 }]}>{store.address}</Text>
       </Section>
 
-      <Section title="전화번호">
-        <Text style={styles.plainText}>{store.phone}</Text>
+      <Section title="전화번호" spacing={spacing}>
+        <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 20 }]}>{store.phone || "정보 없음"}</Text>
       </Section>
     </ScrollView>
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  children,
+  spacing,
+}: {
+  title: string;
+  children: ReactNode;
+  spacing: ReturnType<typeof useTheme>["spacing"];
+}) {
+  const { colors, typography } = useTheme();
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={{ marginTop: spacing.xxl, marginHorizontal: spacing.xl }}>
+      <Text style={[typography.title, { color: colors.textPrimary, marginBottom: spacing.md }]}>{title}</Text>
       {children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  content: {
-    paddingBottom: 40,
-  },
-  hero: {
-    height: 160,
-    backgroundColor: "#E9EEF1",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  heroEmoji: {
-    fontSize: 56,
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#1a1a1a",
-    marginTop: 16,
-    marginHorizontal: 20,
-  },
-  rating: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 6,
-    marginHorizontal: 20,
-  },
-  kakaoButton: {
-    backgroundColor: "#FFF4E5",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginTop: 12,
-    marginHorizontal: 20,
-    alignSelf: "flex-start",
-  },
-  kakaoButtonText: {
-    color: "#ff6b35",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  tags: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 12,
-    marginHorizontal: 20,
-  },
-  tag: {
-    backgroundColor: "#F3F3F4",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  tagText: {
-    fontSize: 12,
-    color: "#555",
-  },
-  section: {
-    marginTop: 24,
-    marginHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1a1a1a",
-    marginBottom: 10,
-  },
-  hoursRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
-  },
-  hoursDay: {
-    fontSize: 13,
-    color: "#777",
-  },
-  hoursValue: {
-    fontSize: 13,
-    color: "#1a1a1a",
-  },
-  plainText: {
-    fontSize: 14,
-    color: "#333",
-    lineHeight: 20,
-  },
-  centerScreen: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    fontSize: 15,
-    color: "#555",
-  },
-});
