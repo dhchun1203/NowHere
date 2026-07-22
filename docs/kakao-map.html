@@ -32,42 +32,46 @@
       box-shadow: 0 0 0 2px #3478F6;
     }
     #status {
+      display: none;
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       z-index: 999;
-      background: rgba(0,0,0,0.75);
+      background: rgba(200,40,40,0.92);
       color: #fff;
       font: 12px/1.4 -apple-system, sans-serif;
       padding: 6px 10px;
       white-space: pre-wrap;
     }
+    #status.visible {
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <div id="status">로딩 시작...</div>
+  <div id="status"></div>
   <div id="map"></div>
   <script>
     function post(payload) {
       var msg = JSON.stringify(payload);
       if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
     }
-    function setStatus(text) {
+    function showError(text) {
       var el = document.getElementById('status');
-      if (el) el.textContent = text;
-      post({ status: text });
+      if (el) {
+        el.textContent = text;
+        el.classList.add('visible');
+      }
+      post({ mapError: text });
     }
     window.onerror = function (message) {
-      setStatus('JS 에러: ' + message);
-      post({ mapError: String(message) });
+      showError('JS 에러: ' + message);
     };
-    setStatus('SDK 스크립트 로딩 중... location=' + window.location.href);
   </script>
   <script
     src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=5ffdaff75515163aa48ee83020d8dd6a&autoload=false"
-    onerror="setStatus('SDK 스크립트 로드 실패'); post({ mapError: '카카오맵 SDK 스크립트 로드 실패 (네트워크 또는 도메인 오류)' })"
-    onload="setStatus('SDK 스크립트 로드됨, kakao.maps.load 호출 중...')"
+    onerror="showError('카카오맵 SDK 스크립트 로드 실패 (네트워크 또는 도메인 오류)')"
   ></script>
   <script>
     var map = null;
@@ -114,7 +118,6 @@
         overlay.setMap(map);
         overlays.push(overlay);
       });
-      setStatus('지도 갱신됨 (가게 ' + (data.stores || []).length + '개)');
     }
 
     function handleMessage(event) {
@@ -122,8 +125,7 @@
         var data = JSON.parse(event.data);
         if (data.type === 'update') render(data);
       } catch (e) {
-        setStatus('메시지 파싱 에러: ' + (e && e.message ? e.message : e));
-        post({ mapError: 'message parse error: ' + (e && e.message ? e.message : e) });
+        showError('message parse error: ' + (e && e.message ? e.message : e));
       }
     }
     // Android는 document, iOS는 window로 message 이벤트가 붙는 버전이 있어 둘 다 등록.
@@ -132,23 +134,19 @@
 
     setTimeout(function () {
       if (typeof kakao === 'undefined' || !kakao.maps) {
-        setStatus('5초 타임아웃: kakao 전역 객체 없음 (도메인 미등록 가능성)');
-        post({ mapError: '카카오맵 SDK가 5초 내에 초기화되지 않음 (도메인 미등록 가능성)' });
+        showError('카카오맵 SDK가 5초 내에 초기화되지 않음 (도메인 미등록 가능성)');
       }
     }, 5000);
 
     try {
-      setStatus('kakao.maps.load 호출...');
       kakao.maps.load(function () {
         // RN으로부터 postMessage가 안 와도 기본 좌표(강남역)로 지도가 뜨는지 확인 가능하도록
         // 우선 기본 지도를 그린다. 이후 실제 데이터가 오면 render()가 덮어쓴다.
         ensureMap(GANGNAM);
-        setStatus('지도 초기화 완료 (기본: 강남역). RN 데이터 대기 중...');
         post({ pageReady: true });
       });
     } catch (e) {
-      setStatus('kakao.maps.load 호출 실패: ' + (e && e.message ? e.message : e));
-      post({ mapError: 'kakao.maps.load 호출 실패: ' + (e && e.message ? e.message : e) });
+      showError('kakao.maps.load 호출 실패: ' + (e && e.message ? e.message : e));
     }
   </script>
 </body>
