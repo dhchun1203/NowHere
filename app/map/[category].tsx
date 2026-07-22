@@ -1,13 +1,18 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Platform, StyleSheet, Text, View } from "react-native";
 import { CATEGORIES } from "../../constants/categories";
+import { isKakaoMapAvailable, KakaoMapView } from "../../components/KakaoMapView";
 import { MapMarker } from "../../components/MapMarker";
 import { RecommendationCard } from "../../components/RecommendationCard";
 import { StoreListItem } from "../../components/StoreListItem";
 import { useLocation } from "../../hooks/useLocation";
 import { useNearbyStores, useRecommendation } from "../../hooks/useNearbyStores";
 import type { Category, StoreWithDistance } from "../../services/types";
+
+// react-native-webview는 web에서 지원되지 않아 더미 컴포넌트만 렌더링한다.
+// 네이티브(iOS/Android)에서 카카오맵 키가 있을 때만 실제 지도를 쓰고, 그 외엔 기존 placeholder로 대체한다.
+const USE_KAKAO_MAP = Platform.OS !== "web" && isKakaoMapAvailable();
 
 const MAP_PADDING = 0.15;
 
@@ -66,31 +71,47 @@ export default function MapScreen() {
   }
 
   const isLoading = storesQuery.isLoading || recommendationQuery.isLoading;
+  const highlightedStoreIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (selectedId) ids.add(selectedId);
+    if (recommendation) ids.add(recommendation.store.id);
+    return Array.from(ids);
+  }, [selectedId, recommendation]);
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: `${categoryInfo?.emoji ?? ""} ${categoryInfo?.label ?? ""}` }} />
 
       <View style={styles.mapBox}>
-        {bounds && (
-          <>
-            <MapMarker
-              leftPercent={projectToPercent(location.coords.longitude, bounds.minLng, bounds.maxLng)}
-              topPercent={projectToPercent(location.coords.latitude, bounds.minLat, bounds.maxLat, true)}
-              emoji="●"
-              isUser
-            />
-            {stores.map((store) => (
+        {USE_KAKAO_MAP ? (
+          <KakaoMapView
+            userLocation={location.coords}
+            stores={stores}
+            categoryEmoji={categoryInfo?.emoji ?? "📍"}
+            highlightedStoreIds={highlightedStoreIds}
+            onMarkerPress={setSelectedId}
+          />
+        ) : (
+          bounds && (
+            <>
               <MapMarker
-                key={store.id}
-                leftPercent={projectToPercent(store.longitude, bounds.minLng, bounds.maxLng)}
-                topPercent={projectToPercent(store.latitude, bounds.minLat, bounds.maxLat, true)}
-                emoji={categoryInfo?.emoji ?? "📍"}
-                selected={selectedId === store.id || recommendation?.store.id === store.id}
-                onPress={() => setSelectedId(store.id)}
+                leftPercent={projectToPercent(location.coords.longitude, bounds.minLng, bounds.maxLng)}
+                topPercent={projectToPercent(location.coords.latitude, bounds.minLat, bounds.maxLat, true)}
+                emoji="●"
+                isUser
               />
-            ))}
-          </>
+              {stores.map((store) => (
+                <MapMarker
+                  key={store.id}
+                  leftPercent={projectToPercent(store.longitude, bounds.minLng, bounds.maxLng)}
+                  topPercent={projectToPercent(store.latitude, bounds.minLat, bounds.maxLat, true)}
+                  emoji={categoryInfo?.emoji ?? "📍"}
+                  selected={highlightedStoreIds.includes(store.id)}
+                  onPress={() => setSelectedId(store.id)}
+                />
+              ))}
+            </>
+          )
         )}
         {location.mode === "manual" && (
           <View style={styles.manualBadge}>
