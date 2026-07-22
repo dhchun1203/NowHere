@@ -123,22 +123,9 @@ on conflict (id) do update set
   tags = excluded.tags,
   updated_at = excluded.updated_at;
 
-insert into review_summaries (store_id, attribute, mention_ratio, sentiment, sample_phrase, generated_at) values
-  ('a0000000-0000-0000-0000-000000000001', '웨이팅_적음', 0.42, 'positive', '웨이팅 거의 없이 바로 들어갈 수 있어요', '2026-07-22T00:00:00+09:00'),
-  ('a0000000-0000-0000-0000-000000000001', '혼밥가능', 0.35, 'positive', '혼자 가도 눈치 안 보이는 분위기예요', '2026-07-22T00:00:00+09:00'),
-  ('a0000000-0000-0000-0000-000000000002', '양많음', 0.55, 'positive', '양이 정말 푸짐해요', '2026-07-22T00:00:00+09:00'),
-  ('a0000000-0000-0000-0000-000000000003', '웨이팅_적음', 0.22, 'positive', '예약하면 대기 없이 이용 가능해요', '2026-07-22T00:00:00+09:00'),
-  ('a0000000-0000-0000-0000-000000000004', '가성비', 0.48, 'positive', '가격 대비 반찬이 알차요', '2026-07-22T00:00:00+09:00'),
-  ('a0000000-0000-0000-0000-000000000005', '조용함', 0.5, 'positive', '작업하기 좋을 만큼 조용해요', '2026-07-22T00:00:00+09:00'),
-  ('a0000000-0000-0000-0000-000000000006', '실내좌석많음', 0.44, 'positive', '비 오는 날에도 앉을 자리가 많아요', '2026-07-22T00:00:00+09:00'),
-  ('a0000000-0000-0000-0000-000000000007', '디저트맛집', 0.6, 'positive', '디저트가 다 맛있다는 후기가 많아요', '2026-07-22T00:00:00+09:00'),
-  ('a0000000-0000-0000-0000-000000000008', '친절함', 0.2, 'positive', '직원분이 친절해요', '2026-07-22T00:00:00+09:00'),
-  ('a0000000-0000-0000-0000-000000000010', '주차편함', 0.33, 'positive', '주차가 넉넉하고 편해요', '2026-07-22T00:00:00+09:00')
-on conflict (store_id, attribute) do update set
-  mention_ratio = excluded.mention_ratio,
-  sentiment = excluded.sentiment,
-  sample_phrase = excluded.sample_phrase,
-  generated_at = excluded.generated_at;
+-- review_summaries는 더 이상 목업으로 시드하지 않는다. 가짜 리뷰 문구를 실제 서비스에
+-- 진짜 리뷰처럼 보여주면 안 되기 때문에, scripts/summarize-reviews.mjs(네이버 블로그 검색
+-- + Claude 요약 배치)로만 채운다. 이 파일을 재실행해도 review_summaries는 건드리지 않는다.
 
 insert into context_signals (store_id, signal_type, condition, description, confidence) values
   ('a0000000-0000-0000-0000-000000000001', 'busy_time', '{"hourRange": [14, 17], "dayType": "weekday"}', '지금 시간대엔 한산해요', 0.8),
