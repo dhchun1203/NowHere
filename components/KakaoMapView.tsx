@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { StyleSheet } from "react-native";
+import { useMemo, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 import type { Coordinates, StoreWithDistance } from "../services/types";
 
@@ -81,51 +81,105 @@ function buildHtml(
 </head>
 <body>
   <div id="map"></div>
-  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false"></script>
   <script>
-    kakao.maps.load(function () {
-      var map = new kakao.maps.Map(document.getElementById('map'), {
-        center: new kakao.maps.LatLng(${userLocation.latitude}, ${userLocation.longitude}),
-        level: 4,
+    function reportError(message) {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ mapError: String(message) }));
+      }
+    }
+    window.onerror = function (message) { reportError(message); };
+  </script>
+  <script
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false"
+    onerror="reportError('카카오맵 SDK 스크립트 로드 실패 (네트워크 또는 키 오류)')"
+  ></script>
+  <script>
+    setTimeout(function () {
+      if (typeof kakao === 'undefined' || !kakao.maps) {
+        reportError('카카오맵 SDK가 5초 내에 초기화되지 않음 (도메인 미등록 가능성)');
+      }
+    }, 5000);
+    try {
+      kakao.maps.load(function () {
+        try {
+          var map = new kakao.maps.Map(document.getElementById('map'), {
+            center: new kakao.maps.LatLng(${userLocation.latitude}, ${userLocation.longitude}),
+            level: 4,
+          });
+          new kakao.maps.CustomOverlay({
+            position: new kakao.maps.LatLng(${userLocation.latitude}, ${userLocation.longitude}),
+            content: '<div class="user-dot"></div>',
+          }).setMap(map);
+          ${markersJs}
+          window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ mapReady: true }));
+        } catch (e) {
+          reportError('지도 초기화 중 에러: ' + (e && e.message ? e.message : e));
+        }
       });
-      new kakao.maps.CustomOverlay({
-        position: new kakao.maps.LatLng(${userLocation.latitude}, ${userLocation.longitude}),
-        content: '<div class="user-dot"></div>',
-      }).setMap(map);
-      ${markersJs}
-    });
+    } catch (e) {
+      reportError('kakao.maps.load 호출 실패: ' + (e && e.message ? e.message : e));
+    }
   </script>
 </body>
 </html>`;
 }
 
 export function KakaoMapView({ userLocation, stores, categoryEmoji, highlightedStoreIds, onMarkerPress }: Props) {
+  const [mapError, setMapError] = useState<string | null>(null);
+
   const html = useMemo(
     () => buildHtml(userLocation, stores, categoryEmoji, highlightedStoreIds),
     [userLocation.latitude, userLocation.longitude, stores, categoryEmoji, highlightedStoreIds]
   );
 
   return (
-    <WebView
-      style={styles.webview}
-      originWhitelist={["*"]}
-      source={{ html }}
-      javaScriptEnabled
-      onMessage={(event) => {
-        try {
-          const data = JSON.parse(event.nativeEvent.data);
+    <View style={styles.container}>
+      <WebView
+        style={styles.webview}
+        originWhitelist={["*"]}
+        source={{ html }}
+        javaScriptEnabled
+        onMessage={(event) => {
+          let data: { storeId?: string; mapError?: string; mapReady?: boolean };
+          try {
+            data = JSON.parse(event.nativeEvent.data);
+          } catch {
+            return;
+          }
           if (typeof data.storeId === "string") onMarkerPress?.(data.storeId);
-        } catch {
-          // 무시: 지도 쪽에서 예상 못한 메시지가 온 경우
-        }
-      }}
-    />
+          if (typeof data.mapError === "string") setMapError(data.mapError);
+          if (data.mapReady) setMapError(null);
+        }}
+        onError={(event) => setMapError(`WebView 로드 실패: ${event.nativeEvent.description}`)}
+      />
+      {mapError && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{mapError}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   webview: {
     flex: 1,
     backgroundColor: "transparent",
+  },
+  errorBox: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(200,40,40,0.92)",
+    padding: 10,
+  },
+  errorText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
