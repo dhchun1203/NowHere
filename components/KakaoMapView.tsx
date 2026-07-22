@@ -134,10 +134,13 @@ export function KakaoMapView({ userLocation, stores, categoryEmoji, highlightedS
 
   return (
     <View style={styles.container}>
+      {/* baseUrl은 카카오 개발자 콘솔의 JavaScript SDK 도메인 등록값(http://localhost)과 맞춰야 한다.
+          html만 넘기면 웹뷰에 origin이 없어 Referer가 비고, 카카오 SDK가 도메인 검증에 실패해
+          kakao 전역 객체 자체가 생성되지 않는다. */}
       <WebView
         style={styles.webview}
         originWhitelist={["*"]}
-        source={{ html }}
+        source={{ html, baseUrl: "http://localhost" }}
         javaScriptEnabled
         onMessage={(event) => {
           let data: { storeId?: string; mapError?: string; mapReady?: boolean };
