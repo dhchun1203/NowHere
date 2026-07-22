@@ -23,6 +23,7 @@
     "react-native-webview": "13.15.0"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.112.5",
     "@expo/ngrok": "^4.1.3",
     "@types/react": "~19.1.10",
     "typescript": "~5.9.2"
@@ -31,7 +32,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "summarize-reviews": "node --env-file=.env scripts/summarize-reviews.mjs"
   },
   "private": true
 }
