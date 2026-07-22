@@ -8,6 +8,7 @@ import type {
   Store,
   StoreWithDistance,
 } from "./types";
+import { fetchCurrentWeather, type WeatherCondition } from "./weather";
 
 const NEARBY_RADIUS_METERS = 3000;
 const MENTION_RATIO_THRESHOLD = 0.3;
@@ -144,10 +145,6 @@ export async function geocodeArea(query: string): Promise<{ coords: Coordinates;
 
 const recommendationCache = new Map<string, Recommendation>();
 
-function currentWeather(): "rain" | "clear" | "snow" {
-  return "clear";
-}
-
 function matchesHour(hourRange: [number, number] | undefined, hour: number): boolean {
   if (!hourRange) return false;
   const [start, end] = hourRange;
@@ -158,7 +155,8 @@ function buildRecommendation(
   store: Store,
   reviews: ReviewSummary[],
   signals: ContextSignal[],
-  now: Date
+  now: Date,
+  weather: WeatherCondition
 ): { score: number; reasonText: string; reasonSources: string[] } | null {
   const storeReviews = reviews
     .filter((r) => r.storeId === store.id && r.mentionRatio >= MENTION_RATIO_THRESHOLD)
@@ -166,7 +164,6 @@ function buildRecommendation(
   const topReview = storeReviews[0];
 
   const hour = now.getHours();
-  const weather = currentWeather();
   const storeSignals = signals
     .filter((c) => c.storeId === store.id)
     .filter((c) => matchesHour(c.condition.hourRange, hour) || c.condition.weather === weather);
@@ -207,9 +204,10 @@ export async function fetchRecommendation(
   if (stores.length === 0) return null;
 
   const storeIds = stores.map((s) => s.id);
-  const [reviewsRes, signalsRes] = await Promise.all([
+  const [reviewsRes, signalsRes, weather] = await Promise.all([
     supabase.from("review_summaries").select("*").in("store_id", storeIds).gte("mention_ratio", MENTION_RATIO_THRESHOLD),
     supabase.from("context_signals").select("*").in("store_id", storeIds),
+    fetchCurrentWeather(location),
   ]);
   if (reviewsRes.error) throw reviewsRes.error;
   if (signalsRes.error) throw signalsRes.error;
@@ -219,7 +217,7 @@ export async function fetchRecommendation(
 
   let best: { store: Store; score: number; reasonText: string; reasonSources: string[] } | null = null;
   for (const store of stores) {
-    const built = buildRecommendation(store, reviews, signals, now);
+    const built = buildRecommendation(store, reviews, signals, now, weather);
     if (built && (!best || built.score > best.score)) {
       best = { store, ...built };
     }
