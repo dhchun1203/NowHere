@@ -18,7 +18,15 @@ export default function CategoryScreen() {
   const locationLabel = location.mode === "manual" ? location.manualLabel : "내 위치 근처";
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing.xl }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingHorizontal: spacing.xxl,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.xxl,
+      }}
+    >
       <Pressable
         onPress={() => router.push("/location-search")}
         style={{
@@ -26,7 +34,6 @@ export default function CategoryScreen() {
           alignItems: "center",
           gap: 4,
           alignSelf: "flex-start",
-          marginTop: spacing.sm,
           paddingVertical: spacing.xs,
         }}
       >
