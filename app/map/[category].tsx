@@ -6,6 +6,7 @@ import { useTheme } from "../../constants/theme";
 import { isKakaoMapAvailable, KakaoMapView } from "../../components/KakaoMapView";
 import { MapMarker } from "../../components/MapMarker";
 import { RecommendationCard } from "../../components/RecommendationCard";
+import { RecommendationCardSkeleton } from "../../components/RecommendationCardSkeleton";
 import { StoreListItem } from "../../components/StoreListItem";
 import { StoreListItemSkeleton } from "../../components/StoreListItemSkeleton";
 import { Chip } from "../../components/ui/Chip";
@@ -160,6 +161,8 @@ export default function MapScreen() {
           />
         ))}
       </ScrollView>
+
+      {isLoading && <RecommendationCardSkeleton />}
 
       {!isLoading && recommendation && (
         <RecommendationCard

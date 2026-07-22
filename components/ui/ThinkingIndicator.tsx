@@ -24,12 +24,17 @@ function Dot({ delay, color }: { delay: number; color: string }) {
   return <Animated.View style={[styles.dot, { backgroundColor: color }, animatedStyle]} />;
 }
 
-export function ThinkingIndicator({ label = "지금 딱 맞는 곳을 찾는 중" }: { label?: string }) {
+type Props = {
+  label?: string;
+  textColor?: string;
+};
+
+export function ThinkingIndicator({ label = "지금 딱 맞는 곳을 찾는 중", textColor }: Props) {
   const { colors, typography, spacing } = useTheme();
 
   return (
     <View style={[styles.row, { gap: spacing.sm }]}>
-      <Text style={[typography.caption, { color: colors.textSecondary }]}>{label}</Text>
+      <Text style={[typography.caption, { color: textColor ?? colors.textSecondary }]}>{label}</Text>
       <View style={styles.dots}>
         <Dot delay={0} color={colors.primary} />
         <Dot delay={120} color={colors.primary} />

@@ -1,5 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { useTheme } from "../constants/theme";
 import type { Recommendation } from "../services/types";
+import { Badge } from "./ui/Badge";
+import { Card } from "./ui/Card";
 
 type Props = {
   recommendation: Recommendation;
@@ -18,63 +21,49 @@ function sourceLabel(source: string): string {
 }
 
 export function RecommendationCard({ recommendation, onPress }: Props) {
+  const { colors, typography, spacing, radius } = useTheme();
+  const evidenceCount = recommendation.reasonSources.length;
+
   return (
-    <Pressable style={styles.container} onPress={onPress}>
-      <Text style={styles.label}>지금 이 순간, 이 가게 어때요?</Text>
-      <Text style={styles.name}>{recommendation.store.name}</Text>
-      <Text style={styles.reason}>{recommendation.reasonText}</Text>
-      <View style={styles.sources}>
+    <Card
+      onPress={onPress}
+      style={{
+        backgroundColor: colors.cardDark,
+        borderColor: "transparent",
+        marginHorizontal: spacing.lg,
+        marginTop: spacing.md,
+        marginBottom: spacing.xs,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm }}>
+        <Text style={[typography.captionMedium, { color: colors.primary }]}>지금 이 순간, 이 가게 어때요?</Text>
+        {evidenceCount > 1 && <Badge label={`근거 ${evidenceCount}개 겹침`} tone="dark" />}
+      </View>
+
+      <Text style={[typography.headline, { color: colors.onCardDark, marginBottom: spacing.md }]}>
+        {recommendation.store.name}
+      </Text>
+
+      <View
+        style={{
+          backgroundColor: "rgba(255,255,255,0.08)",
+          borderLeftWidth: 3,
+          borderLeftColor: colors.primary,
+          borderRadius: radius.sm,
+          padding: spacing.md,
+          marginBottom: spacing.md,
+        }}
+      >
+        <Text style={[typography.body, { color: colors.onCardDarkMuted, lineHeight: 21 }]}>
+          “{recommendation.reasonText}”
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.xs }}>
         {recommendation.reasonSources.map((source) => (
-          <View key={source} style={styles.sourceTag}>
-            <Text style={styles.sourceText}>{sourceLabel(source)}</Text>
-          </View>
+          <Badge key={source} label={sourceLabel(source)} tone="dark" />
         ))}
       </View>
-    </Pressable>
+    </Card>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 18,
-    padding: 18,
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  label: {
-    color: "#ffb08a",
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  name: {
-    color: "#ffffff",
-    fontSize: 19,
-    fontWeight: "800",
-    marginBottom: 6,
-  },
-  reason: {
-    color: "#e5e5e5",
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  sources: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  sourceTag: {
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  sourceText: {
-    color: "#ffd8bd",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-});
