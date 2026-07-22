@@ -125,22 +125,32 @@ export async function fetchStoreDetail(id: string): Promise<Store | null> {
   return rowToStore(data as StoreRow);
 }
 
-const AREA_COORDINATES: { keywords: string[]; label: string; coords: Coordinates }[] = [
-  { keywords: ["강남", "역삼", "테헤란"], label: "강남역", coords: { latitude: 37.4979, longitude: 127.0276 } },
-  { keywords: ["홍대", "합정", "연남"], label: "홍대입구", coords: { latitude: 37.5563, longitude: 126.9236 } },
-  { keywords: ["이태원", "한남"], label: "이태원", coords: { latitude: 37.5344, longitude: 126.9944 } },
-  { keywords: ["잠실", "송파"], label: "잠실", coords: { latitude: 37.5133, longitude: 127.1001 } },
-  { keywords: ["신촌", "이대"], label: "신촌", coords: { latitude: 37.5559, longitude: 126.9368 } },
-  { keywords: ["여의도"], label: "여의도", coords: { latitude: 37.5219, longitude: 126.9245 } },
-  { keywords: ["종로", "종각", "광화문"], label: "종로", coords: { latitude: 37.5704, longitude: 126.9831 } },
-];
+const KAKAO_REST_API_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY;
 
+// 카카오 로컬 API(키워드 검색)로 지역/장소명을 좌표로 변환한다.
+// REST API 키는 클라이언트에 노출되지만(EXPO_PUBLIC_), Local API는 별도 활성화 없이
+// 기본 무료 쿼터로 동작해서 카카오맵 JS SDK 때와 달리 결제수단 등록이 필요 없다.
+// 프로덕션에서는 이 키를 서버/엣지 함수 뒤로 숨기는 게 정석이지만 MVP 단계에서는 생략.
 export async function geocodeArea(query: string): Promise<{ coords: Coordinates; label: string } | null> {
   const trimmed = query.trim();
-  if (!trimmed) return null;
-  const match = AREA_COORDINATES.find((area) => area.keywords.some((kw) => trimmed.includes(kw)));
-  if (!match) return null;
-  return { coords: match.coords, label: match.label };
+  if (!trimmed || !KAKAO_REST_API_KEY) return null;
+
+  try {
+    const res = await fetch(
+      `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(trimmed)}`,
+      { headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const top = data.documents?.[0];
+    if (!top) return null;
+    return {
+      coords: { latitude: Number(top.y), longitude: Number(top.x) },
+      label: top.place_name,
+    };
+  } catch {
+    return null;
+  }
 }
 
 const recommendationCache = new Map<string, Recommendation>();
