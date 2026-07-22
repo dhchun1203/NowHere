@@ -1,13 +1,17 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Platform, StyleSheet, Text, View } from "react-native";
+import { FlatList, Platform, ScrollView, Text, View } from "react-native";
 import { CATEGORIES } from "../../constants/categories";
+import { useTheme } from "../../constants/theme";
 import { isKakaoMapAvailable, KakaoMapView } from "../../components/KakaoMapView";
 import { MapMarker } from "../../components/MapMarker";
 import { RecommendationCard } from "../../components/RecommendationCard";
 import { StoreListItem } from "../../components/StoreListItem";
+import { StoreListItemSkeleton } from "../../components/StoreListItemSkeleton";
+import { Chip } from "../../components/ui/Chip";
 import { useLocation } from "../../hooks/useLocation";
 import { useNearbyStores, useRecommendation } from "../../hooks/useNearbyStores";
+import { categoryColors } from "../../constants/theme";
 import type { Category, StoreWithDistance } from "../../services/types";
 
 // react-native-webview는 web에서 지원되지 않아 더미 컴포넌트만 렌더링한다.
@@ -32,6 +36,7 @@ export default function MapScreen() {
   const { category } = useLocalSearchParams<{ category: Category }>();
   const router = useRouter();
   const location = useLocation();
+  const { colors, spacing } = useTheme();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const categoryInfo = CATEGORIES.find((c) => c.key === category);
@@ -60,10 +65,13 @@ export default function MapScreen() {
 
   if (!location.coords) {
     return (
-      <View style={styles.centerScreen}>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 10, padding: 24 }}>
         <Stack.Screen options={{ title: categoryInfo?.label ?? "" }} />
-        <Text style={styles.emptyText}>위치 정보가 없어요.</Text>
-        <Text style={styles.emptySubText} onPress={() => router.push("/location-search")}>
+        <Text style={{ fontSize: 15, color: colors.textSecondary }}>위치 정보가 없어요.</Text>
+        <Text
+          style={{ fontSize: 14, color: colors.primary, fontFamily: "Pretendard-Bold" }}
+          onPress={() => router.push("/location-search")}
+        >
           지역을 직접 입력하기
         </Text>
       </View>
@@ -79,10 +87,10 @@ export default function MapScreen() {
   }, [selectedId, recommendation]);
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: colors.surface }}>
       <Stack.Screen options={{ title: `${categoryInfo?.emoji ?? ""} ${categoryInfo?.label ?? ""}` }} />
 
-      <View style={styles.mapBox}>
+      <View style={{ height: 220, backgroundColor: "#E9EEF1", position: "relative", overflow: "hidden" }}>
         {USE_KAKAO_MAP ? (
           <KakaoMapView
             userLocation={location.coords}
@@ -114,18 +122,44 @@ export default function MapScreen() {
           )
         )}
         {location.mode === "manual" && (
-          <View style={styles.manualBadge}>
-            <Text style={styles.manualBadgeText}>📍 {location.manualLabel} 기준</Text>
+          <View
+            style={{
+              position: "absolute",
+              top: 10,
+              left: 10,
+              backgroundColor: "rgba(0,0,0,0.6)",
+              borderRadius: 8,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 11, fontFamily: "Pretendard-SemiBold" }}>
+              📍 {location.manualLabel} 기준
+            </Text>
           </View>
         )}
       </View>
 
-      {isLoading && (
-        <View style={styles.loadingRow}>
-          <ActivityIndicator />
-          <Text style={styles.loadingText}>주변 가게를 찾는 중이에요...</Text>
-        </View>
-      )}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}
+      >
+        {CATEGORIES.map((c) => (
+          <Chip
+            key={c.key}
+            label={c.label}
+            icon={c.emoji}
+            selected={c.key === category}
+            accentColor={categoryColors[c.key].accent}
+            accentTint={categoryColors[c.key].tint}
+            onPress={() => {
+              if (c.key !== category) router.replace(`/map/${c.key}`);
+            }}
+          />
+        ))}
+      </ScrollView>
 
       {!isLoading && recommendation && (
         <RecommendationCard
@@ -135,80 +169,32 @@ export default function MapScreen() {
       )}
 
       {!isLoading && stores.length === 0 && (
-        <View style={styles.centerScreen}>
-          <Text style={styles.emptyText}>주변에 표시할 가게가 없어요.</Text>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 10, padding: 24 }}>
+          <Text style={{ fontSize: 15, color: colors.textSecondary }}>주변에 표시할 가게가 없어요.</Text>
         </View>
       )}
 
-      <FlatList
-        style={styles.list}
-        data={stores}
-        keyExtractor={(item: StoreWithDistance) => item.id}
-        renderItem={({ item }) => (
-          <StoreListItem
-            store={item}
-            isRecommended={recommendation?.store.id === item.id}
-            onPress={() => router.push(`/store/${item.id}`)}
-          />
-        )}
-      />
+      {isLoading ? (
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
+          <StoreListItemSkeleton />
+          <StoreListItemSkeleton />
+          <StoreListItemSkeleton />
+        </View>
+      ) : (
+        <FlatList
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}
+          data={stores}
+          keyExtractor={(item: StoreWithDistance) => item.id}
+          renderItem={({ item }) => (
+            <StoreListItem
+              store={item}
+              isRecommended={recommendation?.store.id === item.id}
+              onPress={() => router.push(`/store/${item.id}`)}
+            />
+          )}
+        />
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  mapBox: {
-    height: 220,
-    backgroundColor: "#E9EEF1",
-    position: "relative",
-    overflow: "hidden",
-  },
-  manualBadge: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  manualBadgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  loadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-  },
-  loadingText: {
-    color: "#777",
-    fontSize: 13,
-  },
-  list: {
-    flex: 1,
-  },
-  centerScreen: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: 24,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: "#555",
-  },
-  emptySubText: {
-    fontSize: 14,
-    color: "#ff6b35",
-    fontWeight: "700",
-  },
-});

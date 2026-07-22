@@ -1,5 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { CATEGORIES } from "../constants/categories";
+import { categoryColors, useTheme } from "../constants/theme";
 import type { StoreWithDistance } from "../services/types";
+import { Badge } from "./ui/Badge";
+import { Card } from "./ui/Card";
 
 type Props = {
   store: StoreWithDistance;
@@ -8,78 +12,46 @@ type Props = {
 };
 
 export function StoreListItem({ store, isRecommended, onPress }: Props) {
+  const { colors, typography, spacing, radius } = useTheme();
+  const tone = categoryColors[store.category];
+  const emoji = CATEGORIES.find((c) => c.key === store.category)?.emoji ?? "📍";
+
   return (
-    <Pressable style={styles.container} onPress={onPress}>
-      <View style={styles.row}>
-        <Text style={styles.name}>{store.name}</Text>
-        {isRecommended && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>추천</Text>
+    <Card onPress={onPress} style={{ flexDirection: "row", gap: spacing.md, marginBottom: spacing.md }}>
+      <View
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: radius.md,
+          backgroundColor: tone.tint,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ fontSize: 24 }}>{emoji}</Text>
+      </View>
+
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+          <Text style={[typography.title, { color: colors.textPrimary, flexShrink: 1 }]} numberOfLines={1}>
+            {store.name}
+          </Text>
+          {isRecommended && <Badge label="추천" tone="primary" />}
+        </View>
+
+        <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>
+          {store.reviewCount > 0 ? `⭐ ${store.avgRating.toFixed(1)} (${store.reviewCount}) · ` : ""}
+          {(store.distanceMeters / 1000).toFixed(1)}km
+        </Text>
+
+        {store.tags.length > 0 && (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginTop: spacing.sm }}>
+            {store.tags.map((tag) => (
+              <Badge key={tag} label={tag} />
+            ))}
           </View>
         )}
       </View>
-      <Text style={styles.meta}>
-        {store.reviewCount > 0 ? `⭐ ${store.avgRating.toFixed(1)} (${store.reviewCount}) · ` : ""}
-        {(store.distanceMeters / 1000).toFixed(1)}km
-      </Text>
-      <View style={styles.tags}>
-        {store.tags.map((tag) => (
-          <View key={tag} style={styles.tag}>
-            <Text style={styles.tagText}>{tag}</Text>
-          </View>
-        ))}
-      </View>
-    </Pressable>
+    </Card>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e5e5e5",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1a1a1a",
-  },
-  badge: {
-    backgroundColor: "#FFEDE3",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  badgeText: {
-    color: "#ff6b35",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  meta: {
-    fontSize: 13,
-    color: "#777",
-    marginTop: 4,
-  },
-  tags: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 8,
-  },
-  tag: {
-    backgroundColor: "#F3F3F4",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  tagText: {
-    fontSize: 12,
-    color: "#555",
-  },
-});
