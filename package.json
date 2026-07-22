@@ -39,6 +39,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "summarize-reviews": "node --env-file=.env scripts/summarize-reviews.mjs",
+    "summarize-reviews:new": "node --env-file=.env scripts/summarize-reviews.mjs --only-new",
     "seed-stores": "node --env-file=.env scripts/seed-stores-from-kakao.mjs"
   },
   "private": true

@@ -106,10 +106,22 @@ function isInsufficientCreditsError(err) {
 }
 
 async function main() {
-  const { data: stores, error } = await supabase.from("stores").select("id, name, address");
+  const onlyNew = process.argv.includes("--only-new");
+
+  const { data: allStores, error } = await supabase.from("stores").select("id, name, address");
   if (error) throw error;
 
-  console.log(`${stores.length}개 가게에 대해 리뷰 요약을 생성합니다.\n`);
+  let stores = allStores;
+  if (onlyNew) {
+    const { data: existing, error: existingError } = await supabase
+      .from("review_summaries")
+      .select("store_id");
+    if (existingError) throw existingError;
+    const storesWithSummaries = new Set(existing.map((r) => r.store_id));
+    stores = allStores.filter((s) => !storesWithSummaries.has(s.id));
+  }
+
+  console.log(`${stores.length}개 가게에 대해 리뷰 요약을 생성합니다${onlyNew ? " (아직 요약 없는 가게만)" : ""}.\n`);
 
   let totalWritten = 0;
 

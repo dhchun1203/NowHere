@@ -31,6 +31,7 @@ const AREAS = [
   { label: "신촌", latitude: 37.5559, longitude: 126.9368 },
   { label: "여의도", latitude: 37.5219, longitude: 126.9245 },
   { label: "종로", latitude: 37.5704, longitude: 126.9831 },
+  { label: "동탄역", latitude: 37.19994, longitude: 127.09574 },
 ];
 
 const RADIUS_METERS = 3000;
